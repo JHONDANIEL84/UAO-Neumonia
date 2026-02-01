@@ -6,6 +6,7 @@ from tkinter import ttk, font, filedialog, Entry
 
 from tkinter.messagebox import askokcancel, showinfo, WARNING
 import getpass
+import os
 from PIL import ImageTk, Image
 import csv
 import pyautogui
@@ -14,10 +15,9 @@ import img2pdf
 import numpy as np
 import time
 import cv2
+import pydicom as dicom
 import tensorflow as tf
 from tensorflow.keras import backend as K
-tf.compat.v1.disable_eager_execution()
-tf.compat.v1.experimental.output_all_intermediates(True)
 
 
 def grad_cam(array):
@@ -25,7 +25,7 @@ def grad_cam(array):
     model = model_fun()
     preds = model.predict(img)
     argmax = np.argmax(preds[0])
-    output = model.output[:, argmax]
+    output = tf.gather(model.output[0], int(argmax), axis=1)
     last_conv_layer = model.get_layer("conv10_thisone")
     grads = K.gradients(output, last_conv_layer.output)[0]
     pooled_grads = K.mean(grads, axis=(0, 1, 2))
@@ -99,6 +99,14 @@ def preprocess(array):
     array = np.expand_dims(array, axis=-1)
     array = np.expand_dims(array, axis=0)
     return array
+
+
+def model_fun():
+    model = tf.keras.models.load_model("conv_MLP_84.h5", compile=False)
+    for layer in model.layers[::-1]:
+        if "conv" in layer.name.lower():
+            print(layer.name)
+            break
 
 
 class App:
@@ -191,53 +199,54 @@ class App:
             filetypes=(
                 ("DICOM", "*.dcm"),
                 ("JPEG", "*.jpeg"),
-                ("jpg files", "*.jpg"),
-                ("png files", "*.png"),
+                ("JPG", "*.jpg"),
+                ("PNG", "*.png"),
                 ("All files", "*.*"),
             ),
         )
+
         if not filepath:
-        return
-ext = os.path.splitext(filepath)[1].lower()
+            return
 
-# limpiar área (si text_img1 es Text)
-    self.text_img1.delete("1.0", END)
+        ext = os.path.splitext(filepath)[1].lower()
 
-if ext == ".dcm":
-        self.array, img2show = read_dicom_file(filepath)
-    else:
-        self.array, img2show = read_jpg_file(filepath)
+        # limpiar área de imagen
+        self.text_img1.delete("1.0", END)
 
-img2show = img2show.resize((250, 250), Image.LANCZOS)
-    self.img1 = ImageTk.PhotoImage(img2show)
+        if ext == ".dcm":
+            self.array, img2show = read_dicom_file(filepath)
+        else:
+            self.array, img2show = read_jpg_file(filepath)
 
-self.text_img1.image_create(END, image=self.img1)
+        img2show = img2show.resize((250, 250), Image.LANCZOS)
+        self.img1 = ImageTk.PhotoImage(img2show)
+        self.text_img1.image_create(END, image=self.img1)
 
-# habilitar botón "Predecir"
-    self.button1["state"] = "normal"
+        self.button1["state"] = "normal"
+
 
     def run_model(self):
         self.label, self.proba, self.heatmap = predict(self.array)
         self.text_img2.delete("1.0", END)
         self.img2 = Image.fromarray(self.heatmap)
         self.img2 = self.img2.resize((250, 250), Image.LANCZOS)
-    self.img2 = ImageTk.PhotoImage(self.img2)
+        self.img2 = ImageTk.PhotoImage(self.img2)
 
-    self.text_img2.image_create(END, image=self.img2)
+        self.text_img2.image_create(END, image=self.img2)
 
-    self.text2.delete(1.0, END)
-    self.text3.delete(1.0, END)
+        self.text2.delete(1.0, END)
+        self.text3.delete(1.0, END)
 
-    self.text2.insert(END, self.label)
-    self.text3.insert(END, "{:.2f}".format(self.proba) + "%")
+        self.text2.insert(END, self.label)
+        self.text3.insert(END, "{:.2f}".format(self.proba) + "%")
 
     def save_results_csv(self):
         with open("historial.csv", "a") as csvfile:
             w = csv.writer(csvfile, delimiter="-")
-            w.writerow(
-                [self.text1.get(), self.label, "{:.2f}".format(self.proba) + "%"]
-            )
-            showinfo(title="Guardar", message="Los datos se guardaron con éxito.")
+        w.writerow(
+            [self.text1.get(), self.label, "{:.2f}".format(self.proba) + "%"]
+        )
+        showinfo(title="Guardar", message="Los datos se guardaron con éxito.")
 
     def create_pdf(self):
         cap = tkcap.CAP(self.root)
@@ -252,8 +261,8 @@ self.text_img1.image_create(END, image=self.img1)
 
     def delete(self):
         answer = askokcancel(
-            title="Confirmación", message="Se borrarán todos los datos.", icon=WARNING
-        )
+        title="Confirmación", message="Se borrarán todos los datos.", icon=WARNING
+    )
         if answer:
             self.text1.delete(0, "end")
             self.text2.delete(1.0, "end")
