@@ -13,9 +13,11 @@ import tkcap
 import img2pdf
 import numpy as np
 import time
+import cv2
+import tensorflow as tf
+from tensorflow.keras import backend as K
 tf.compat.v1.disable_eager_execution()
 tf.compat.v1.experimental.output_all_intermediates(True)
-import cv2
 
 
 def grad_cam(array):
@@ -191,24 +193,43 @@ class App:
                 ("JPEG", "*.jpeg"),
                 ("jpg files", "*.jpg"),
                 ("png files", "*.png"),
+                ("All files", "*.*"),
             ),
         )
-        if filepath:
-            self.array, img2show = read_dicom_file(filepath)
-            self.img1 = img2show.resize((250, 250), Image.ANTIALIAS)
-            self.img1 = ImageTk.PhotoImage(self.img1)
-            self.text_img1.image_create(END, image=self.img1)
-            self.button1["state"] = "enabled"
+        if not filepath:
+        return
+ext = os.path.splitext(filepath)[1].lower()
+
+# limpiar área (si text_img1 es Text)
+    self.text_img1.delete("1.0", END)
+
+if ext == ".dcm":
+        self.array, img2show = read_dicom_file(filepath)
+    else:
+        self.array, img2show = read_jpg_file(filepath)
+
+img2show = img2show.resize((250, 250), Image.LANCZOS)
+    self.img1 = ImageTk.PhotoImage(img2show)
+
+self.text_img1.image_create(END, image=self.img1)
+
+# habilitar botón "Predecir"
+    self.button1["state"] = "normal"
 
     def run_model(self):
         self.label, self.proba, self.heatmap = predict(self.array)
+        self.text_img2.delete("1.0", END)
         self.img2 = Image.fromarray(self.heatmap)
-        self.img2 = self.img2.resize((250, 250), Image.ANTIALIAS)
-        self.img2 = ImageTk.PhotoImage(self.img2)
-        print("OK")
-        self.text_img2.image_create(END, image=self.img2)
-        self.text2.insert(END, self.label)
-        self.text3.insert(END, "{:.2f}".format(self.proba) + "%")
+        self.img2 = self.img2.resize((250, 250), Image.LANCZOS)
+    self.img2 = ImageTk.PhotoImage(self.img2)
+
+    self.text_img2.image_create(END, image=self.img2)
+
+    self.text2.delete(1.0, END)
+    self.text3.delete(1.0, END)
+
+    self.text2.insert(END, self.label)
+    self.text3.insert(END, "{:.2f}".format(self.proba) + "%")
 
     def save_results_csv(self):
         with open("historial.csv", "a") as csvfile:
@@ -237,8 +258,8 @@ class App:
             self.text1.delete(0, "end")
             self.text2.delete(1.0, "end")
             self.text3.delete(1.0, "end")
-            self.text_img1.delete(self.img1, "end")
-            self.text_img2.delete(self.img2, "end")
+            self.text_img1.delete("1.0", END)
+            self.text_img2.delete("1.0", END)
             showinfo(title="Borrar", message="Los datos se borraron con éxito")
 
 
