@@ -95,7 +95,7 @@ def preprocess(array):
     array = cv2.cvtColor(array, cv2.COLOR_BGR2GRAY)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(4, 4))
     array = clahe.apply(array)
-    array = array / 255
+    array = array = array.astype(np.float32) / 255.0
     array = np.expand_dims(array, axis=-1)
     array = np.expand_dims(array, axis=0)
     return array
@@ -108,6 +108,7 @@ def model_fun():
             print(layer.name)
             break
 
+    return model
 
 class App:
     def __init__(self):
