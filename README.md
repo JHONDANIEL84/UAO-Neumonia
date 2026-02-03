@@ -77,9 +77,11 @@ Además, la aplicación incorpora **técnicas de explicabilidad (Grad-CAM)** par
 ## 📁 Estructura del proyecto
 
 ```text
-UAO-NEUMONIA/
+UAO-Neumonia/
 ├── .github/
-│   └── copilot-instructions.md
+├── tests/
+│   ├── conftest.py
+│   └── test_predict.py
 ├── detector_neumonia.py
 ├── main.py
 ├── conv_MLP_84.h5
@@ -87,8 +89,8 @@ UAO-NEUMONIA/
 ├── uv.lock
 ├── Dockerfile
 ├── README.md
-├── historial.csv
 └── .gitignore
+
 
 
 ## 📦 Gestión de dependencias (UV)
@@ -132,11 +134,37 @@ Proyecto académico desarrollado con fines educativos.
 ✅ Estado del proyecto
 
 ✔ Repositorio limpio
-✔ Uso de UV
+✔ Control de versiones con Git
+✔ Pruebas unitarias implementadas
+✔ Preprocesamiento corregido (float32)
+✔ Grad-CAM funcional
+✔ Docker operativo
 ✔ README profesional
-✔ Docker funcional
-✔ Evidencia de ejecución
-✔ Modelo incluido
 
+🧪 Pruebas unitarias (pytest)
+
+El proyecto incluye pruebas unitarias automatizadas para validar el correcto funcionamiento de las funciones críticas del sistema.
+
+✔ Pruebas implementadas
+
+Validación de la salida de predict
+
+Validación del preprocesamiento de imágenes
+
+Verificación de tipos de datos (float32)
+
+Aislamiento del modelo mediante monkeypatch
+
+## 📂 Estructura de pruebas
+
+tests/
+├── conftest.py
+└── test_predict.py
+
+▶️ Ejecutar pruebas
+pytest
+
+✅ Resultado esperado
+2 passed, 1 warning
 
 
